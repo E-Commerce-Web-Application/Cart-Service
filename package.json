@@ -12,10 +12,17 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@grpc/proto-loader": "^0.8.0",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "google-protobuf": "^4.0.2",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.2.3"
+  },
+  "devDependencies": {
+    "@grpc/grpc-js": "^1.14.3",
+    "grpc-tools": "^1.13.1",
+    "ts-proto": "^2.11.4"
   }
 }

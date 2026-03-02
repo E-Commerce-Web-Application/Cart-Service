@@ -1,0 +1,6 @@
+[submodule "app/protos"]
+	path = app/protos
+	url = https://github.com/E-Commerce-Web-Application/Service-Contracts.git
+[submodule "protos"]
+	path = protos
+	url = https://github.com/E-Commerce-Web-Application/Service-Contracts.git
