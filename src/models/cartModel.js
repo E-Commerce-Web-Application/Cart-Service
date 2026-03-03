@@ -6,7 +6,10 @@ const itemSchema = new mongoose.Schema({
     required: true
   },
   name: String,
-  price: Number,
+  price: {
+    type: Number,
+    required: true
+  },
   quantity: {
     type: Number,
     required: true,
@@ -20,8 +23,7 @@ const cartSchema = new mongoose.Schema(
   {
     userId: {
       type: String,
-      required: true,
-      unique: true
+      required: true
     },
     items: [itemSchema],
     totalAmount: {
