@@ -1,5 +1,5 @@
-const Cart = require("../Cart-Service/src/models/cartModel");
-const cart_pb = require("../Cart-Service/generated/cart/cart_pb");
+const Cart = require("./src/models/cartModel");
+const cart_pb = require("./generated/cart/cart_pb");
 
 function calculateTotal(items) {
   return items.reduce((total, item) => total + item.price * item.quantity, 0);

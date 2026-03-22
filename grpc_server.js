@@ -1,9 +1,9 @@
 const grpc = require("@grpc/grpc-js");
 
-const cartService = require("../Cart-Service/generated/cart/cart_grpc_pb");
+const cartService = require("./generated/cart/cart_grpc_pb");
 const cartHandler = require("./cartHandler");
 require("dotenv").config();
-const connectDB = require("../Cart-Service/src/config/db");
+const connectDB = require("./src/config/db");
 
 connectDB();
 
