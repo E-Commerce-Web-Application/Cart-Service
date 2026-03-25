@@ -1,23 +1,11 @@
-const grpc = require("@grpc/grpc-js");
-
-const cartService = require("./app/generated/cart/cart_grpc_pb");
-const cartHandler = require("./cartHandler");
+require("dotenv").config();
+const grpc = require('@grpc/grpc-js');
+const services = require('./app/generated/cart/cart_grpc_pb.js'); // The file you provided
+const handlers = require('./cartHandler.js');
 
 const server = new grpc.Server();
+server.addService(services.CartServiceService, handlers);
 
-server.addService(cartService.CartServiceService, {
-  getCart: cartHandler.getCart,
-  addItem: cartHandler.addItem,
-  removeItem: cartHandler.removeItem,
-  clearCart: cartHandler.clearCart,
+server.bindAsync(`0.0.0.0:${process.env.GRPC_PORT}`, grpc.ServerCredentials.createInsecure(), () => {
+  console.log(`gRPC Cart Server running on port ${process.env.GRPC_PORT}`);
 });
-
-const PORT = "50051";
-
-server.bindAsync(
-  `0.0.0.0:${PORT}`,
-  grpc.ServerCredentials.createInsecure(),
-  () => {
-    console.log(`Cart gRPC Server running on port ${PORT}`);
-  }
-);

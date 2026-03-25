@@ -29,14 +29,14 @@ COPY --from=deps /app/node_modules ./node_modules
 
 # Copy only necessary source files
 COPY src ./src
-COPY generated ./generated
+COPY app/generated ./app/generated
 COPY grpc_server.js ./
 COPY server.js ./
 COPY start.js ./
 COPY cartHandler.js ./
 
 # Expose ports
-EXPOSE 50051 8000
+EXPOSE 50052 8001
 
 # Run app
 CMD ["node", "start.js"]

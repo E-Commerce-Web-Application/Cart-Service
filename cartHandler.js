@@ -1,214 +1,153 @@
-const Cart = require("./src/models/cartModel");
-const cartPb = require("./app/generated/cart/cart_pb");
-const { Timestamp } = require("google-protobuf/google/protobuf/timestamp_pb.js");
+const grpc = require('@grpc/grpc-js');
+const { Timestamp } = require('google-protobuf/google/protobuf/timestamp_pb.js');
 
-function toProtoTimestamp(date) {
-  if (!date) return undefined;
+// Adjust paths based on your project structure
+const messages = require('./app/generated/cart/cart_pb.js');
+const Cart = require('./src/models/cartModel.js'); // Assuming you saved your schema here
 
-  const timestamp = new Timestamp();
-  const millis = new Date(date).getTime();
 
-  timestamp.setSeconds(Math.floor(millis / 1000));
-  timestamp.setNanos((millis % 1000) * 1e6);
+function buildCartResponse(userId, cartDoc) {
+  // If no cart document exists in DB, initialize empty defaults
+  const cartData = cartDoc || { 
+    items: [], 
+    totalAmount: 0, 
+    createdAt: new Date(), 
+    updatedAt: new Date() 
+  };
 
-  return timestamp;
-}
+  const pbCart = new messages.Cart();
+  pbCart.setUserId(userId);
+  pbCart.setTotalAmount(cartData.totalAmount);
 
-function buildCartItem(itemDoc) {
-  const item = new cartPb.CartItem();
-  item.setProductId(itemDoc.productId || "");
-  item.setName(itemDoc.name || "");
-  item.setPrice(itemDoc.price || 0);
-  item.setQuantity(itemDoc.quantity || 0);
-  item.setImage(itemDoc.image || "");
-  item.setShopId(itemDoc.shopId || "");
-  return item;
-}
+  // Set CreatedAt Timestamp
+  const createdAtTs = new Timestamp();
+  createdAtTs.setSeconds(Math.floor(new Date(cartData.createdAt).getTime() / 1000));
+  pbCart.setCreatedAt(createdAtTs);
 
-function buildCartResponse(cartDoc) {
-  const cartMessage = new cartPb.Cart();
+  // Set UpdatedAt Timestamp
+  const updatedAtTs = new Timestamp();
+  const updatedTime = cartData.updatedAt ? new Date(cartData.updatedAt).getTime() : Date.now();
+  updatedAtTs.setSeconds(Math.floor(updatedTime / 1000));
+  pbCart.setUpdatedAt(updatedAtTs);
 
-  cartMessage.setUserId(cartDoc.userId || "");
-  cartMessage.setItemsList((cartDoc.items || []).map(buildCartItem));
-  cartMessage.setTotalAmount(cartDoc.totalAmount || 0);
+  // Map Mongoose items to Protobuf CartItem messages
+  const pbItems = cartData.items.map(item => {
+    const pbItem = new messages.CartItem();
+    pbItem.setProductId(item.productId);
+    pbItem.setName(item.name || "");
+    pbItem.setPrice(item.price || 0.0);
+    pbItem.setQuantity(item.quantity || 0);
+    pbItem.setImage(item.image || "");
+    pbItem.setShopId(item.shopId || "");
+    return pbItem;
+  });
 
-  const createdAt = toProtoTimestamp(cartDoc.createdAt);
-  const updatedAt = toProtoTimestamp(cartDoc.updatedAt);
+  pbCart.setItemsList(pbItems);
 
-  if (createdAt) cartMessage.setCreatedAt(createdAt);
-  if (updatedAt) cartMessage.setUpdatedAt(updatedAt);
-
-  const response = new cartPb.CartResponse();
-  response.setCart(cartMessage);
-
+  const response = new messages.CartResponse();
+  response.setCart(pbCart);
+  
   return response;
 }
 
-function calculateTotal(items) {
-  return items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+// --- GRPC METHOD HANDLERS ---
+
+async function getCart(call, callback) {
+  try {
+    const userId = call.request.getUserId();
+    const cartDoc = await Cart.findOne({ userId });
+    
+    callback(null, buildCartResponse(userId, cartDoc));
+  } catch (error) {
+    console.error("Error in getCart:", error);
+    callback({ code: grpc.status.INTERNAL, message: error.message });
+  }
 }
 
-exports.getCart = async (call, callback) => {
+async function addItem(call, callback) {
   try {
     const userId = call.request.getUserId();
+    const pbItem = call.request.getItem();
+    const productId = pbItem.getProductId();
 
-    if (!userId) {
-      return callback({
-        code: 3, // INVALID_ARGUMENT
-        message: "userId is required",
-      });
-    }
-
+    // Find existing cart or create a new instance
     let cart = await Cart.findOne({ userId });
-
     if (!cart) {
-      cart = await Cart.create({
-        userId,
-        items: [],
-        totalAmount: 0,
-      });
+      cart = new Cart({ userId, items: [], totalAmount: 0 });
     }
 
-    return callback(null, buildCartResponse(cart));
-  } catch (error) {
-    console.error("getCart error:", error);
-    return callback({
-      code: 13, // INTERNAL
-      message: error.message || "Failed to get cart",
-    });
-  }
-};
-
-exports.addItem = async (call, callback) => {
-  try {
-    const userId = call.request.getUserId();
-    const productId = call.request.getProductId();
-    const name = call.request.getName();
-    const price = call.request.getPrice();
-    const quantity = call.request.getQuantity();
-    const image = call.request.getImage();
-    const shopId = call.request.getShopId();
-
-    if (!userId || !productId || !price || !quantity) {
-      return callback({
-        code: 3, // INVALID_ARGUMENT
-        message: "userId, productId, price and quantity are required",
-      });
-    }
-
-    let cart = await Cart.findOne({ userId });
-
-    if (!cart) {
-      cart = new Cart({
-        userId,
-        items: [],
-        totalAmount: 0,
-      });
-    }
-
-    const existingItem = cart.items.find(
-      (item) => item.productId === productId
-    );
+    // Check if item already exists in the cart
+    const existingItem = cart.items.find(i => i.productId === productId);
 
     if (existingItem) {
-      existingItem.quantity += quantity;
-      if (name) existingItem.name = name;
-      if (image) existingItem.image = image;
-      if (shopId) existingItem.shopId = shopId;
-      if (price) existingItem.price = price;
+      existingItem.quantity += pbItem.getQuantity();
     } else {
       cart.items.push({
-        productId,
-        name,
-        price,
-        quantity,
-        image,
-        shopId,
+        productId: productId,
+        name: pbItem.getName(),
+        price: pbItem.getPrice(),
+        quantity: pbItem.getQuantity(),
+        image: pbItem.getImage(),
+        shopId: pbItem.getShopId()
       });
     }
 
-    cart.totalAmount = calculateTotal(cart.items);
+    // Recalculate total amount
+    cart.totalAmount = cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    
+    // Save to MongoDB
     await cart.save();
 
-    return callback(null, buildCartResponse(cart));
+    callback(null, buildCartResponse(userId, cart));
   } catch (error) {
-    console.error("addItem error:", error);
-    return callback({
-      code: 13, // INTERNAL
-      message: error.message || "Failed to add item to cart",
-    });
+    console.error("Error in addItem:", error);
+    callback({ code: grpc.status.INTERNAL, message: error.message });
   }
-};
+}
 
-exports.removeItem = async (call, callback) => {
+async function removeItem(call, callback) {
   try {
     const userId = call.request.getUserId();
     const productId = call.request.getProductId();
 
-    if (!userId || !productId) {
-      return callback({
-        code: 3, // INVALID_ARGUMENT
-        message: "userId and productId are required",
-      });
+    let cart = await Cart.findOne({ userId });
+    
+    if (cart) {
+      // Filter out the item
+      cart.items = cart.items.filter(i => i.productId !== productId);
+      
+      // Recalculate total amount
+      cart.totalAmount = cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      
+      await cart.save();
     }
 
-    const cart = await Cart.findOne({ userId });
-
-    if (!cart) {
-      return callback({
-        code: 5, // NOT_FOUND
-        message: "Cart not found",
-      });
-    }
-
-    cart.items = cart.items.filter((item) => item.productId !== productId);
-    cart.totalAmount = calculateTotal(cart.items);
-
-    await cart.save();
-
-    return callback(null, buildCartResponse(cart));
+    callback(null, buildCartResponse(userId, cart));
   } catch (error) {
-    console.error("removeItem error:", error);
-    return callback({
-      code: 13, // INTERNAL
-      message: error.message || "Failed to remove item from cart",
-    });
+    console.error("Error in removeItem:", error);
+    callback({ code: grpc.status.INTERNAL, message: error.message });
   }
-};
+}
 
-exports.clearCart = async (call, callback) => {
+async function clearCart(call, callback) {
   try {
     const userId = call.request.getUserId();
+    
+    await Cart.findOneAndDelete({ userId });
 
-    if (!userId) {
-      return callback({
-        code: 3, // INVALID_ARGUMENT
-        message: "userId is required",
-      });
-    }
-
-    const cart = await Cart.findOne({ userId });
-
-    if (!cart) {
-      return callback({
-        code: 5, // NOT_FOUND
-        message: "Cart not found",
-      });
-    }
-
-    cart.items = [];
-    cart.totalAmount = 0;
-    await cart.save();
-
-    const response = new cartPb.ClearCartResponse();
-    response.setMessage("Cart cleared successfully");
-
-    return callback(null, response);
+    const response = new messages.ClearCartResponse();
+    response.setMessage(`Cart cleared successfully for user: ${userId}`);
+    
+    callback(null, response);
   } catch (error) {
-    console.error("clearCart error:", error);
-    return callback({
-      code: 13, // INTERNAL
-      message: error.message || "Failed to clear cart",
-    });
+    console.error("Error in clearCart:", error);
+    callback({ code: grpc.status.INTERNAL, message: error.message });
   }
+}
+
+module.exports = {
+  getCart,
+  addItem,
+  removeItem,
+  clearCart
 };

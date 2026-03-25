@@ -1,20 +1,20 @@
-const Cart = require("../models/cartModel");
+const Cart = require('../models/cartModel');
 
 /**
- * GET /api/cart?userId=123
+ * GET /api/cart?user_id=123
  */
 exports.getCart = async (req, res, next) => {
   try {
-    const { userId } = req.query;
+    const { user_id } = req.query; 
 
-    if (!userId) {
-      return res.status(400).json({ message: "userId is required" });
+    if (!user_id) {
+      return res.status(400).json({ message: "user_id is required" });
     }
 
-    const cart = await Cart.findOne({ userId });
+    const cart = await Cart.findOne({ userId: user_id });
 
     if (!cart) {
-      return res.json({ items: [], totalAmount: 0 });
+      return res.json({ user_id, items: [], total_amount: 0 });
     }
 
     res.json(cart);
@@ -25,48 +25,39 @@ exports.getCart = async (req, res, next) => {
 
 /**
  * POST /api/cart/add
+ * Body: { "user_id": "123", "item": { "product_id": "...", "quantity": 1, ... } }
  */
 exports.addItem = async (req, res, next) => {
   try {
-    const { userId, productId, name, price, quantity, image, shopId } = req.body;
+    const { user_id, item } = req.body;
 
-    if (!userId || !productId || !price || !quantity) {
-      return res.status(400).json({ message: "Missing required fields" });
+    if (!user_id || !item || !item.product_id) {
+      return res.status(400).json({ message: "Missing user_id or item details" });
     }
 
-    let cart = await Cart.findOne({ userId });
-
+    let cart = await Cart.findOne({ userId: user_id });
     if (!cart) {
-      cart = new Cart({
-        userId,
-        items: []
-      });
+      cart = new Cart({ userId: user_id, items: [], totalAmount: 0 });
     }
 
-    const existingItem = cart.items.find(
-      (item) => item.productId === productId
-    );
+    const existingItem = cart.items.find(i => i.productId === item.product_id);
 
     if (existingItem) {
-      existingItem.quantity += quantity;
+      existingItem.quantity += (item.quantity || 1);
     } else {
       cart.items.push({
-        productId,
-        name,
-        price,
-        quantity,
-        image,
-        shopId
+        productId: item.product_id,
+        name: item.name || "",
+        price: item.price || 0,
+        quantity: item.quantity || 1,
+        image: item.image || "",
+        shopId: item.shop_id || ""
       });
     }
 
-    cart.totalAmount = cart.items.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    );
-
+    cart.totalAmount = cart.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+    
     await cart.save();
-
     res.json(cart);
   } catch (error) {
     next(error);
@@ -74,63 +65,46 @@ exports.addItem = async (req, res, next) => {
 };
 
 /**
- * DELETE /api/cart/remove/:productId?userId=123
+ * DELETE /api/cart/remove/:product_id?user_id=123
  */
 exports.removeItem = async (req, res, next) => {
   try {
-    const { productId } = req.params;
-    const { userId } = req.query;
+    const { product_id } = req.params; 
+    const { user_id } = req.query;
 
-    if (!userId) {
-      return res.status(400).json({ message: "userId is required" });
+    if (!user_id) {
+      return res.status(400).json({ message: "user_id query parameter is required" });
     }
 
-    const cart = await Cart.findOne({ userId });
+    let cart = await Cart.findOne({ userId: user_id });
 
-    if (!cart) {
-      return res.status(404).json({ message: "Cart not found" });
+    if (cart) {
+      cart.items = cart.items.filter((item) => item.productId !== product_id);
+      cart.totalAmount = cart.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+      await cart.save();
+      res.json(cart);
+    } else {
+      res.json({ items: [], total_amount: 0 });
     }
-
-    cart.items = cart.items.filter(
-      (item) => item.productId !== productId
-    );
-
-    cart.totalAmount = cart.items.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    );
-
-    await cart.save();
-
-    res.json(cart);
   } catch (error) {
     next(error);
   }
 };
 
 /**
- * DELETE /api/cart/clear?userId=123
+ * DELETE /api/cart/clear?user_id=123
  */
 exports.clearCart = async (req, res, next) => {
   try {
-    const { userId } = req.query;
+    const { user_id } = req.query;
 
-    if (!userId) {
-      return res.status(400).json({ message: "userId is required" });
+    if (!user_id) {
+      return res.status(400).json({ message: "user_id query parameter is required" });
     }
 
-    const cart = await Cart.findOne({ userId });
+    await Cart.findOneAndDelete({ userId: user_id });
 
-    if (!cart) {
-      return res.status(404).json({ message: "Cart not found" });
-    }
-
-    cart.items = [];
-    cart.totalAmount = 0;
-
-    await cart.save();
-
-    res.json({ message: "Cart cleared" });
+    res.json({ message: `Cart cleared successfully for user: ${user_id}` });
   } catch (error) {
     next(error);
   }
