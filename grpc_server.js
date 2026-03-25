@@ -1,6 +1,6 @@
 const grpc = require("@grpc/grpc-js");
 
-const cartService = require("./generated/cart/cart_grpc_pb");
+const cartService = require("./app/generated/cart/cart_grpc_pb");
 const cartHandler = require("./cartHandler");
 
 const server = new grpc.Server();

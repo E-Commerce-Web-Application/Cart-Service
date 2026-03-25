@@ -8,7 +8,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use("/api/cart", cartRoutes);
+app.use("/cart", cartRoutes);
 
 app.use(errorMiddleware);
 
