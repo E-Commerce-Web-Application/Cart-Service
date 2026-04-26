@@ -92,6 +92,46 @@ exports.removeItem = async (req, res, next) => {
 };
 
 /**
+ * PATCH /api/cart/update/:product_id?user_id=123
+ * Body: { quantity: number }
+ */
+exports.updateItemQuantity = async (req, res, next) => {
+  try {
+    const { product_id } = req.params;
+    const { user_id } = req.query;
+    const { quantity } = req.body;
+
+    if (!user_id) {
+      return res.status(400).json({ message: "user_id query parameter is required" });
+    }
+
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      return res.status(400).json({ message: "quantity must be an integer greater than 0" });
+    }
+
+    const cart = await Cart.findOne({ userId: user_id });
+
+    if (!cart) {
+      return res.status(404).json({ message: "Cart not found" });
+    }
+
+    const item = cart.items.find((entry) => entry.productId === product_id);
+
+    if (!item) {
+      return res.status(404).json({ message: "Cart item not found" });
+    }
+
+    item.quantity = quantity;
+    cart.totalAmount = cart.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+
+    await cart.save();
+    res.json(cart);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * DELETE /api/cart/clear?user_id=123
  */
 exports.clearCart = async (req, res, next) => {
