@@ -28,8 +28,3 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          args: >
-            -Dsonar.organization=e-commerce-web-application
-            -Dsonar.projectKey=E-Commerce-Web-Application_Cart-Service
-            -Dsonar.sources=.
