@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cart-service
+  namespace: cart-service
+  labels:
+    app: cart-service
+spec:
+  replicas: 2
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: cart-service
+  template:
+    metadata:
+      labels:
+        app: cart-service
+    spec:
+      containers:
+        - name: cart-service
+          image: 382736934164.dkr.ecr.eu-north-1.amazonaws.com/cart-service
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: rest
+              containerPort: 8003
+              protocol: TCP
+            - name: grpc
+              containerPort: 50053
+              protocol: TCP
+          env:
+            - name: REST_PORT
+              value: "8003"
+            - name: GRPC_PORT
+              value: "50053"
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: cart-service-secret
+                  key: MONGO_URI
+          readinessProbe:
+            tcpSocket:
+              port: rest
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket:
+              port: rest
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

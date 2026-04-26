@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cart-service
+  namespace: cart-service
+  labels:
+    app: cart-service
+spec:
+  type: ClusterIP
+  selector:
+    app: cart-service
+  ports:
+    - name: rest
+      port: 8003
+      targetPort: rest
+      protocol: TCP
+    - name: grpc
+      port: 50053
+      targetPort: grpc
+      protocol: TCP
