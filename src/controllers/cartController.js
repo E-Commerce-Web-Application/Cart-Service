@@ -5,9 +5,8 @@ const Cart = require('../models/cartModel');
  */
 exports.getCart = async (req, res, next) => {
   try {
-    const { user_id } = req.query; 
-
-    const cart = await Cart.findOne({ userId: { $eq: user_id } });
+    const userId = String(req.query.user_id);
+    const cart = await Cart.findOne({ userId: { $eq: userId } });
 
     if (!cart) {
       return res.json({ user_id, items: [], total_amount: 0 });
@@ -25,13 +24,14 @@ exports.getCart = async (req, res, next) => {
  */
 exports.addItem = async (req, res, next) => {
   try {
-    const { user_id, item } = req.body;
+    const userId = String(req.body.user_id);
+    const item = req.body.item;
 
-    if (!user_id || !item?.product_id) {
+    if (!userId || !item?.product_id) {
       return res.status(400).json({ message: "Missing user_id or item details" });
     }
 
-    let cart = await Cart.findOne({ userId: { $eq: user_id } });
+    let cart = await Cart.findOne({ userId: { $eq: userId } });
     if (!cart) {
       cart = new Cart({ userId: user_id, items: [], totalAmount: 0 });
     }
@@ -65,10 +65,10 @@ exports.addItem = async (req, res, next) => {
  */
 exports.removeItem = async (req, res, next) => {
   try {
-    const { product_id } = req.params; 
-    const { user_id } = req.query;
+    const productId = String(req.params.product_id);
+    const userId = String(req.query.user_id);
 
-    let cart = await Cart.findOne({ userId: { $eq: user_id } });
+    let cart = await Cart.findOne({ userId: { $eq: userId } });
 
     if (cart) {
       cart.items = cart.items.filter((item) => item.productId !== product_id);
@@ -89,15 +89,15 @@ exports.removeItem = async (req, res, next) => {
  */
 exports.updateItemQuantity = async (req, res, next) => {
   try {
-    const { product_id } = req.params;
-    const { user_id } = req.query;
-    const { quantity } = req.body;
+    const productId = String(req.params.product_id);
+    const userId = String(req.query.user_id);
+    const quantity = req.body.quantity;
 
     if (!Number.isInteger(quantity) || quantity < 1) {
       return res.status(400).json({ message: "quantity must be an integer greater than 0" });
     }
 
-    const cart = await Cart.findOne({ userId: { $eq: user_id } });
+    const cart = await Cart.findOne({ userId: { $eq: userId } });
 
     if (!cart) {
       return res.status(404).json({ message: "Cart not found" });
@@ -124,9 +124,9 @@ exports.updateItemQuantity = async (req, res, next) => {
  */
 exports.clearCart = async (req, res, next) => {
   try {
-    const { user_id } = req.query;
+    const userId = String(req.query.user_id);
 
-    await Cart.findOneAndDelete({ userId: { $eq: user_id } });
+    await Cart.findOneAndDelete({ userId: { $eq: userId } });
 
     res.json({ message: `Cart cleared successfully for user: ${user_id}` });
   } catch (error) {

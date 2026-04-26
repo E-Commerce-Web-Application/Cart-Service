@@ -54,7 +54,7 @@ function buildCartResponse(userId, cartDoc) {
 
 async function getCart(call, callback) {
   try {
-    const userId = call.request.getUserId();
+    const userId = String(call.request.getUserId());
     const cartDoc = await Cart.findOne({ userId: { $eq: userId } });
     
     callback(null, buildCartResponse(userId, cartDoc));
@@ -66,9 +66,9 @@ async function getCart(call, callback) {
 
 async function addItem(call, callback) {
   try {
-    const userId = call.request.getUserId();
+    const userId = String(call.request.getUserId());
     const pbItem = call.request.getItem();
-    const productId = pbItem.getProductId();
+    const productId = String(pbItem.getProductId());
 
     // Find existing cart or create a new instance
     let cart = await Cart.findOne({ userId: { $eq: userId } });
@@ -107,8 +107,8 @@ async function addItem(call, callback) {
 
 async function removeItem(call, callback) {
   try {
-    const userId = call.request.getUserId();
-    const productId = call.request.getProductId();
+    const userId = String(call.request.getUserId());
+    const productId = String(call.request.getProductId());
 
     let cart = await Cart.findOne({ userId: { $eq: userId } });
     
@@ -131,7 +131,7 @@ async function removeItem(call, callback) {
 
 async function clearCart(call, callback) {
   try {
-    const userId = call.request.getUserId();
+    const userId = String(call.request.getUserId());
     
     await Cart.findOneAndDelete({ userId: { $eq: userId } });
 
