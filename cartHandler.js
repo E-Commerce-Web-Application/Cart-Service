@@ -8,7 +8,7 @@ const Cart = require('./src/models/cartModel.js'); // Assuming you saved your sc
 
 function buildCartResponse(userId, cartDoc) {
   // If no cart document exists in DB, initialize empty defaults
-  const cartData = cartDoc || { 
+  const cartData = cartDoc ?? { 
     items: [], 
     totalAmount: 0, 
     createdAt: new Date(), 
@@ -34,11 +34,11 @@ function buildCartResponse(userId, cartDoc) {
   const pbItems = cartData.items.map(item => {
     const pbItem = new messages.CartItem();
     pbItem.setProductId(item.productId);
-    pbItem.setName(item.name || "");
-    pbItem.setPrice(item.price || 0.0);
-    pbItem.setQuantity(item.quantity || 0);
-    pbItem.setImage(item.image || "");
-    pbItem.setShopId(item.shopId || "");
+    pbItem.setName(item.name ?? "");
+    pbItem.setPrice(item.price ?? 0);
+    pbItem.setQuantity(item.quantity ?? 0);
+    pbItem.setImage(item.image ?? "");
+    pbItem.setShopId(item.shopId ?? "");
     return pbItem;
   });
 

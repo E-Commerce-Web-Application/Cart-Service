@@ -16,9 +16,11 @@ spec:
       labels:
         app: cart-service
     spec:
+      serviceAccountName: cart-service
+      automountServiceAccountToken: false
       containers:
         - name: cart-service
-          image: 382736934164.dkr.ecr.eu-north-1.amazonaws.com/cart-service
+          image: 382736934164.dkr.ecr.eu-north-1.amazonaws.com/cart-service:v1.0.0
           imagePullPolicy: IfNotPresent
           ports:
             - name: rest
@@ -55,6 +57,8 @@ spec:
             requests:
               cpu: 100m
               memory: 128Mi
+              storage: 1Gi
             limits:
               cpu: 500m
               memory: 512Mi
+              storage: 5Gi

@@ -7,10 +7,6 @@ exports.getCart = async (req, res, next) => {
   try {
     const { user_id } = req.query; 
 
-    if (!user_id) {
-      return res.status(400).json({ message: "user_id is required" });
-    }
-
     const cart = await Cart.findOne({ userId: user_id });
 
     if (!cart) {
@@ -31,7 +27,7 @@ exports.addItem = async (req, res, next) => {
   try {
     const { user_id, item } = req.body;
 
-    if (!user_id || !item || !item.product_id) {
+    if (!user_id || !item?.product_id) {
       return res.status(400).json({ message: "Missing user_id or item details" });
     }
 
@@ -43,15 +39,15 @@ exports.addItem = async (req, res, next) => {
     const existingItem = cart.items.find(i => i.productId === item.product_id);
 
     if (existingItem) {
-      existingItem.quantity += (item.quantity || 1);
+      existingItem.quantity += (item.quantity ?? 1);
     } else {
       cart.items.push({
         productId: item.product_id,
-        name: item.name || "",
-        price: item.price || 0,
-        quantity: item.quantity || 1,
-        image: item.image || "",
-        shopId: item.shop_id || ""
+        name: item.name ?? "",
+        price: item.price ?? 0,
+        quantity: item.quantity ?? 1,
+        image: item.image ?? "",
+        shopId: item.shop_id ?? ""
       });
     }
 
@@ -71,10 +67,6 @@ exports.removeItem = async (req, res, next) => {
   try {
     const { product_id } = req.params; 
     const { user_id } = req.query;
-
-    if (!user_id) {
-      return res.status(400).json({ message: "user_id query parameter is required" });
-    }
 
     let cart = await Cart.findOne({ userId: user_id });
 
@@ -100,10 +92,6 @@ exports.updateItemQuantity = async (req, res, next) => {
     const { product_id } = req.params;
     const { user_id } = req.query;
     const { quantity } = req.body;
-
-    if (!user_id) {
-      return res.status(400).json({ message: "user_id query parameter is required" });
-    }
 
     if (!Number.isInteger(quantity) || quantity < 1) {
       return res.status(400).json({ message: "quantity must be an integer greater than 0" });
@@ -137,10 +125,6 @@ exports.updateItemQuantity = async (req, res, next) => {
 exports.clearCart = async (req, res, next) => {
   try {
     const { user_id } = req.query;
-
-    if (!user_id) {
-      return res.status(400).json({ message: "user_id query parameter is required" });
-    }
 
     await Cart.findOneAndDelete({ userId: user_id });
 
