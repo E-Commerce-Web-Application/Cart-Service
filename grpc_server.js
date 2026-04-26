@@ -8,4 +8,4 @@ server.addService(services.CartServiceService, handlers);
 
 server.bindAsync(`0.0.0.0:${process.env.GRPC_PORT}`, grpc.ServerCredentials.createInsecure(), () => {
   console.log(`gRPC Cart Server running on port ${process.env.GRPC_PORT}`);
-});
+}); 

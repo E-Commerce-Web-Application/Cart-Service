@@ -1,104 +1,72 @@
-# Node.js
-node_modules
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.npm
-.yarn
-
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Version control
+# Git
 .git
 .gitignore
+.gitattributes
 
-# Documentation
-README.md
-protos/README.md
+# Dependencies (not needed - we use COPY --from)
+node_modules
+# Environment files
+.env
+.env.local
+.env.*.local
 
-# Build and development files
-Makefile
-test.js
-.dockerignore
-Dockerfile*
-.docker
+# Build artifacts
+dist
+build
+coverage
 
-# IDE and editor files
+# Logs
+npm-debug.log*
+npm-error.log*
+yarn-error.log*
+.DS_Store
+
+# IDE & Editor
 .vscode
 .idea
+.editorconfig
+.eslintrc
+.eslintignore
+.prettierrc
 *.swp
 *.swo
 
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
+# Documentation
+README.md
+LICENSE
+CHANGELOG.md
+docs/
+
+# Proto source files (using pre-generated)
+protos/
+
+# Development
+.nodemon.json
+.mocharc.json
+nodemon.json
+
+# Docker files
+Dockerfile
+docker-compose.yml
+docker-compose.yaml
+.dockerignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.circleci/
+Jenkinsfile
+
+# OS files
 Thumbs.db
+.DS_Store
 
-# Logs
-logs
-*.log
+# Test files (if applicable)
+*.test.js
+*.spec.js
+test/
 
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Coverage directory used by tools like istanbul
-coverage
-
-# Dependency directories
-jspm_packages/
-
-# Optional npm cache directory
-.npm
-
-# Optional REPL history
-.node_repl_history
-
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity file
-.yarn-integrity
-
-# parcel-bundler cache (https://parceljs.org/)
-.cache
-.parcel-cache
-
-# next.js build output
-.next
-
-# nuxt.js build output
-.nuxt
-
-# vuepress build output
-.vuepress/dist
-
-# Serverless directories
-.serverless
-
-# FuseBox cache
-.fusebox/
-
-# DynamoDB Local files
-.dynamodb/
-
-# TernJS port file
-.tern-port
-
-# Stores VSCode versions used for testing VSCode extensions
-.vscode-test
-
-# Temporary folders
-tmp/
-temp/
+# Temporary files
+*.tmp
+*.temp
+.cache/
