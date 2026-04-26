@@ -55,7 +55,7 @@ function buildCartResponse(userId, cartDoc) {
 async function getCart(call, callback) {
   try {
     const userId = call.request.getUserId();
-    const cartDoc = await Cart.findOne({ userId });
+    const cartDoc = await Cart.findOne({ userId: { $eq: userId } });
     
     callback(null, buildCartResponse(userId, cartDoc));
   } catch (error) {
@@ -71,7 +71,7 @@ async function addItem(call, callback) {
     const productId = pbItem.getProductId();
 
     // Find existing cart or create a new instance
-    let cart = await Cart.findOne({ userId });
+    let cart = await Cart.findOne({ userId: { $eq: userId } });
     if (!cart) {
       cart = new Cart({ userId, items: [], totalAmount: 0 });
     }
@@ -110,7 +110,7 @@ async function removeItem(call, callback) {
     const userId = call.request.getUserId();
     const productId = call.request.getProductId();
 
-    let cart = await Cart.findOne({ userId });
+    let cart = await Cart.findOne({ userId: { $eq: userId } });
     
     if (cart) {
       // Filter out the item
@@ -133,7 +133,7 @@ async function clearCart(call, callback) {
   try {
     const userId = call.request.getUserId();
     
-    await Cart.findOneAndDelete({ userId });
+    await Cart.findOneAndDelete({ userId: { $eq: userId } });
 
     const response = new messages.ClearCartResponse();
     response.setMessage(`Cart cleared successfully for user: ${userId}`);
